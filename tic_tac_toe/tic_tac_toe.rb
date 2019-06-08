@@ -368,8 +368,12 @@ class TTTGame
     square = nil
 
     loop do
-      square = gets.chomp.to_i
-      break if board.unmarked_keys.include?(square)
+      square = gets.chomp
+      if square.to_i.to_s == square
+        square = square.to_i
+        break if board.unmarked_keys.include?(square)
+      end
+
       puts "Sorry, that's not a valid choice."
     end
 
