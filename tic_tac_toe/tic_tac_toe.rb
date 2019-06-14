@@ -187,7 +187,7 @@ class TTTGame
       display_score
       display_board
 
-      inner_game_loop
+      round_game
 
       display_result
       add_one_on_winners_score
@@ -199,9 +199,11 @@ class TTTGame
     end
   end
 
-  def inner_game_loop
+  def round_game
     loop do
       current_player_moves
+      switch_current_player_marker
+
       break if someone_won? || board.full?
 
       display_score
@@ -254,8 +256,7 @@ class TTTGame
   end
 
   def next_round_message
-    puts 'Please hit enter to start next round.'\
-    " (Hold ctrl and press 'c' to exit the game)"
+    puts 'Please hit enter to start next round.'
     gets.chomp
   end
 
@@ -296,11 +297,17 @@ class TTTGame
   def current_player_moves
     if human_turn?
       human_moves
-      self.current_marker = COMPUTER_MARKER
     else
       computer_moves
-      self.current_marker = HUMAN_MARKER
     end
+  end
+
+  def switch_current_player_marker
+    self.current_marker = if human_turn?
+                            COMPUTER_MARKER
+                          else
+                            HUMAN_MARKER
+                          end
   end
 
   def human_turn?
