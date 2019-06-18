@@ -332,7 +332,7 @@ class Game
   def play_again?
     answer = nil
     loop do
-      puts 'Would you like to play again?'
+      puts 'Would you like to play again?(y or n)'
       answer = gets.chomp
       break if %(y n).include?(answer)
       puts 'Sorry, must enter y or n.'
