@@ -20,6 +20,10 @@ class Participant
     clear_screen
   end
 
+  def black_jack?
+    total == Game::BLACKJACK
+  end
+
   def total
     total = cards.map do |card|
       if %w(J Q K).include?(card[1])
@@ -37,6 +41,14 @@ class Participant
     end
 
     total
+  end
+
+  def not_busted_and_no_black_jack
+    !busted? && !black_jack?
+  end
+
+  def >(other)
+    total > other.total
   end
 
   def show_total
@@ -144,7 +156,6 @@ class Game
   attr_reader :player, :dealer
   attr_accessor :deck
 
-  # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
   def game_loop
     loop do
       @dealer = Dealer.new
@@ -152,26 +163,17 @@ class Game
       deal_cards_and_show_flop
 
       player_turn
-      if player.busted?
-        show_busted
-        break unless play_again?
-        reset
-        next
+
+      if player.not_busted_and_no_black_jack
+        dealer_turn
+        show_both_players_card_and_total_with_result if !dealer.busted?
       end
 
-      dealer_turn
-      if dealer.busted?
-        show_busted
-        break unless play_again?
-        reset
-        next
-      end
-
-      show_both_players_card_and_total_with_result
-      play_again? ? reset : break
+      answer = ask_player_for_rematch
+      break unless play_again?(answer)
+      reset
     end
   end
-  # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
 
   def initialize_deck_display_opponent_name_and_dealing_message
     display_opponents_name
@@ -223,6 +225,7 @@ class Game
     puts 'Please hit enter to start dealing the cards.'
     gets.chomp
     clear_screen
+
     puts "Dealing Cards to player's..."
     sleep(2)
     clear_screen
@@ -241,10 +244,13 @@ class Game
   end
 
   def show_result
+    dealer_name = dealer
     puts ''
-    if dealer.total > player.total
-      puts "#{dealer} won!"
-    elsif player.total > dealer.total
+    if dealer.black_jack?
+      puts "#{dealer_name} have blackjack! #{dealer_name} won!"
+    elsif dealer > player
+      puts "#{dealer_name} won!"
+    elsif player > dealer
       puts "#{player} won!"
     else
       puts "It's a tie!"
@@ -270,21 +276,38 @@ class Game
 
   def player_turn
     puts "#{player}'s turn."
-    player_hit_or_stay?
+    player_hit_or_stay
   end
 
-  def player_hit_or_stay?
+  def player_hit_or_stay
     loop do
+      if player.black_jack?
+        display_player_cards_total_and_black_jack_message
+        break
+      end
+
       answer = ask_player_to_hit_or_stay
-      clear_screen
 
       break if answer == 's'
+
       player_hits_shows_cards_and_total
 
-      break if player.busted?
+      if player.busted?
+        show_busted
+        break
+      end
+
       dealer.show_first_card
       puts ''
     end
+  end
+
+  def display_player_cards_total_and_black_jack_message
+    clear_screen
+    player.show_cards
+    player.show_total
+    puts ''
+    puts "#{player} you have blackjack! You won!"
   end
 
   def player_hits_shows_cards_and_total
@@ -300,24 +323,30 @@ class Game
     answer = nil
     loop do
       answer = gets.chomp.downcase
-      break if %(h s).include?(answer)
+      break if %w(h s).include?(answer)
       puts "Sorry, must enter 'h' or 's'."
     end
+    clear_screen
     answer
   end
 
   def dealer_turn
     clear_screen
     puts "#{dealer}'s turn."
+
     sleep(1)
+    dealer_hits
+
+    return show_busted if dealer.busted?
+    dealer.stay
+  end
+
+  def dealer_hits
     loop do
       break if dealer.total >= 17
       dealer.hit(deck.deal_one)
       sleep(1)
     end
-
-    return if dealer.busted?
-    dealer.stay
   end
 
   def show_flop
@@ -329,15 +358,19 @@ class Game
     puts ''
   end
 
-  def play_again?
+  def ask_player_for_rematch
     answer = nil
     loop do
-      puts 'Would you like to play again?(y or n)'
+      puts "\nWould you like to play again?(y or n)"
       answer = gets.chomp
-      break if %(y n).include?(answer)
+      break if %w(y n).include?(answer)
       puts 'Sorry, must enter y or n.'
     end
 
+    answer
+  end
+
+  def play_again?(answer)
     answer == 'y'
   end
 end
