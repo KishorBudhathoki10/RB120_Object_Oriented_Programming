@@ -143,6 +143,7 @@ class Game
   def initialize
     clear_screen
     @player = Player.new
+    @dealer = Dealer.new
   end
 
   def start
@@ -158,7 +159,6 @@ class Game
 
   def game_loop
     loop do
-      @dealer = Dealer.new
       initialize_deck_display_opponent_name_and_dealing_message
       deal_cards_and_show_flop
 
@@ -208,6 +208,7 @@ class Game
     clear_screen
     player.cards = []
     self.deck = Deck.new
+    @dealer = Dealer.new
   end
 
   def display_welcome_message
